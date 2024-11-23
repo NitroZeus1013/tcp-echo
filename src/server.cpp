@@ -62,13 +62,22 @@ static int32_t read_full(int client_conn_fd, char *read_buff, size_t n)
 
         if (recvd < 0) // if we get < 0 then it's some kind of error
         {
+            if (recvd == EINTR)
+            {
+                msg("read() recieved EINTR");
+                continue;
+            }
             msg("read err() 0");
             return -1;
         }
         // we should always get recvd bytes <= n
         assert((size_t)recvd <= n);
         n -= (size_t)recvd;
-        read_buff += recvd;
+        read_buff += recvd; // where should next read call start writing to buf from
+        // so this is pointer arithmetic
+        // lets say read_buff was on pointer 0x1234 then read got 3 bytes not we need to write after that 3 bytes
+        // so we increment the read_buff pointer to 0x1237 so read will write the next data from here
+        // otherwise it will overwrite it.
     }
     return 0;
 }
@@ -172,7 +181,7 @@ int main()
     while (true)
     {
 
-        struct sockaddr_in client_conn = {};
+        sockaddr_in client_conn = {};
         socklen_t addrlen = sizeof(client_conn);
         int connfd = accept(server_fd, (sockaddr *)&client_conn, &addrlen); // returns -1 for error
 
