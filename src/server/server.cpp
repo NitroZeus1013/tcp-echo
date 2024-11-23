@@ -11,16 +11,14 @@
 #include <iostream>
 #include <cassert>
 #include <cstring>
+#include "utils/read.hpp"
+#include "utils/write.hpp"
+#include "log.hpp"
 
 // consts
 const size_t k_max_msg = 4096;
 //
 // utility functions
-static void msg(const char *msg)
-{
-    fprintf(stderr, "%s\n", msg);
-}
-
 static void die(const char *msg)
 {
     int err = errno; // errno is global value which set by any system call when it fails.
@@ -47,58 +45,6 @@ static void send_server_response(int client_conn_fd)
 }
 
 // memcpy can also throw errors but we don't handle them
-
-static int32_t read_full(int client_conn_fd, char *read_buff, size_t n)
-{ // while we get n bytes
-    while (n > 0)
-    {
-        ssize_t recvd = read(client_conn_fd, read_buff, n);
-
-        if (recvd == 0)
-        {
-            msg("EOF");
-            return -1;
-        }
-
-        if (recvd < 0) // if we get < 0 then it's some kind of error
-        {
-            if (recvd == EINTR)
-            {
-                msg("read() recieved EINTR");
-                continue;
-            }
-            msg("read err() 0");
-            return -1;
-        }
-        // we should always get recvd bytes <= n
-        assert((size_t)recvd <= n);
-        n -= (size_t)recvd;
-        read_buff += recvd; // where should next read call start writing to buf from
-        // so this is pointer arithmetic
-        // lets say read_buff was on pointer 0x1234 then read got 3 bytes not we need to write after that 3 bytes
-        // so we increment the read_buff pointer to 0x1237 so read will write the next data from here
-        // otherwise it will overwrite it.
-    }
-    return 0;
-}
-static int32_t write_all(int client_conn_fd, char *write_buff, int n)
-{
-    // while we get n bytes
-    while (n > 0)
-    {
-        ssize_t recvd = write(client_conn_fd, write_buff, n);
-
-        if (recvd <= 0) // if we get < 0 then it's some kind of error
-        {
-            msg("write err()");
-            return -1;
-        }
-        // we should always get recvd bytes <= n
-        assert((size_t)recvd <= n);
-        n -= (size_t)recvd;
-    }
-    return 0;
-}
 
 static int32_t handle_one_request(int client_conn_fd)
 {

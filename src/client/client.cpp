@@ -13,71 +13,20 @@
 #include <cstring>
 #include <string.h>
 #include <csignal>
+#include "utils/read.hpp"
+#include "utils/write.hpp"
+#include "log.hpp"
 
 // consts
 const size_t k_max_msg = 4096;
 //
 // utility functions
-static void msg(const char *msg)
-{
-    fprintf(stderr, "%s\n", msg);
-}
 
 static void die(const char *msg)
 {
     int err = errno;
     fprintf(stderr, "[%d] %s\n", err, msg);
     abort();
-}
-
-static int32_t read_full(int client_conn_fd, char *read_buff, size_t n)
-{ // while we get n bytes, as sometimes read may return < n bytes even if we asked for n bytes
-    while (n > 0)
-    {
-        ssize_t recvd = read(client_conn_fd, read_buff, n);
-
-        /*
-            returns 0 for EOF
-            return > 0 for successfull read
-            return -1 for err and errno is set to appropriate error
-         */
-
-        if (recvd == 0)
-        {
-            msg("read EOF");
-            return -1;
-        }
-
-        if (recvd < 0) // if we get < 0 then it's some kind of error
-        {
-            msg("read err()");
-            return -1;
-        }
-        // we should always get recvd bytes <= n
-        assert((size_t)recvd <= n);
-        n -= (size_t)recvd;
-        read_buff += recvd;
-    }
-    return 0;
-}
-static int32_t write_all(int client_conn_fd, char *write_buff, int n)
-{
-    // while we get n bytes
-    while (n > 0)
-    {
-        ssize_t recvd = write(client_conn_fd, write_buff, n);
-
-        if (recvd <= 0) // if we get < 0 then it's some kind of error and errno is set
-        {
-            msg("read err()");
-            return -1;
-        }
-        // we should always get recvd bytes <= n
-        assert((size_t)recvd <= n);
-        n -= (size_t)recvd;
-    }
-
-    return 0;
 }
 
 int32_t query(int client_conn_fd, char *data)
